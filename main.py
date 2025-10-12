@@ -296,25 +296,7 @@ async def handle_broadcast_decision(bot, query: CallbackQuery):
     await bot.send_message(chat_id, report_text)
 
 #================= Reactiom & add users in database ======================
-import random
-VALID_EMOJIS = ["😂", "🔥", "🎉", "🥳", "💯", "😎", "😅", "🙏", "👏", "❤️",
-                "🦁", "🐶", "🐼", "🐱", "👻", "🐻‍❄️", "☁️", "🐅", "⚡️", "🚀",
-                "✨", "💥", "☠️", "🥂", "🍾", "🐠", "🦋"]
-
-@app.on_message(filters.text, group=-1)
-async def auto_react(bot, message):
-    if message.edit_date or not message.from_user:
-        return  # Skip edited messages or anonymous/channel messages
-    add_user(message.from_user.id)  # ✅ Auto add user to DB
-    for _ in range(5):  # Try up to 5 different emojis
-        emoji = random.choice(VALID_EMOJIS)
-        try:
-            await message.react(emoji)
-            break  # ✅ Success, exit loop
-        except Exception as e:
-            print(f"❌ Failed to react with {emoji}: {e}")
-            continue  # Try another emoji
-
+ #yaha pe reation wala part tha jo ki mene delet kar diya hai.
 #=================== ID ============================
 @app.on_message(filters.command("id"))
 async def send_user_id(bot, message):
