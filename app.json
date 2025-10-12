@@ -1,0 +1,42 @@
+{
+    "name": " ꧁༺ 𝐉𝐨𝐡𝐧 𝐖𝐢𝐜𝐤 ༻꧂",
+    "description": "Forword Bot✅",
+    "logo": "https://tinypic.host/image/Screenshot-2025-03-19-06-40-21-30.3gKoOw",
+    "keywords": [
+        "telegram",
+        "forward",
+        "pyrogram",
+        "bot"
+    ],
+    "repository": "https://github.com/jairamjiki/Forward-bot",
+    "success_url": "https://t.me/+T4CxZVremWUzZmI1",
+    "stack": "container",
+    "env": {
+        "API_ID": {
+            "description": "enter_your_api_id",
+            "value": "",
+            "required": true
+        },
+        "API_HASH": {
+            "description": "enter_your_api_harsh",
+            "value": "",
+            "required": true
+        },
+        "BOT_TOKEN": {
+            "description": "Enter your bot token",
+            "value": "",
+            "required": true
+        },
+        "OWNER_ID":{
+            "description": "Enter your classplus token",
+            "value": "",
+            "required": true
+        }
+    },
+    "addons": [],
+    "buildpacks": [
+        {
+            "url": "heroku/python"
+        }
+    ]
+    }
