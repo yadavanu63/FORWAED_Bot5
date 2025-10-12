@@ -14,7 +14,7 @@ A Telegram bot to forward messages between chats/groups/channels with filters, a
 ---
 
 ### 🟣 Deploy to Heroku
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/yadavanu63/Forward-bot5)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/yadavanu63/FORWAED_Bot5)
 
 > Uses `app.json` to set required env variables.
 
