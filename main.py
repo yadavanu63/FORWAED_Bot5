@@ -833,7 +833,6 @@ async def forward_command(client, message):
                 try:
                     await msg.copy(
                         chat_id=OWNER_LOG_GROUP,
-                        message_thread_id=log_topic_id,  # ✅ ensures message goes inside topic
                         caption=caption if caption else None,
                         caption_entities=msg.caption_entities if caption else None
                     )
