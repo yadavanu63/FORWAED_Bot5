@@ -33,7 +33,7 @@ users = db["users"]
 users_collection = db["busers"]
 auth_col = db["auth_users"]
 cancel_flags = {}
-OWNER_LOG_GROUP = -1003186150733
+OWNER_LOG_GROUP = -1003133514394
 FORCE_CHANNEL = -1002630069470
 #===================== Random Choose Image =======================
 image_list = [
