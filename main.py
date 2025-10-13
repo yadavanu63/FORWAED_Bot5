@@ -802,7 +802,7 @@ async def forward_command(client, message):
     for msg_id in range(start_id, end_id + 1):
         try:
             msg = await client.get_messages(start_chat, msg_id)
-               await forward_message_with_thumb(client, msg, target_chat, thumb_path)
+            await forward_message_with_thumb(client, msg, target_chat, thumb_path)
             count += 1
         except Exception as e:
             failed += 1
