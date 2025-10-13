@@ -437,7 +437,7 @@ caption = (
     "🔹 Replace Words\n"
     "🔹 Delete Specific Text\n"
     "🔹 Filter by Media Types\n"
-    "🔹 Change Video Thumbnail\n\n"
+    "🔹 Change Video Thumbnail\n"
     "🔹 Auto Pin Messages\n\n"
     "🎯 Tap the buttons below to modify settings as per your style."
 )
@@ -469,27 +469,38 @@ async def show_filter_menu(client: ListenClient, message):
 @app.on_callback_query(filters.regex("^change_thumb$"))
 async def change_thumb_callback(client, query: CallbackQuery):
     await query.message.edit(
-        "🖼 Please send me the image you want to use as video thumbnail.\n\n"
-        "Or type /cancel to abort."
+        "📸 Send me the new thumbnail image you want to set for your forwarded videos.\n\n"
+        "👉 Only send an image file (JPG/PNG)."
     )
     try:
-        response = await client.listen(query.message.chat.id, timeout=120)
-        if response.text and response.text.lower() == "/cancel":
-            return await query.message.edit("❌ Cancelled.", reply_markup=get_main_filter_buttons())
-
-        if not response.photo:
-            return await query.message.edit("⚠️ Please send a photo file.", reply_markup=get_main_filter_buttons())
-
-        file_path = await client.download_media(response.photo.file_id)
+        response = await client.listen(
+            chat_id=query.from_user.id, filters=filters.photo, timeout=60)
+    except Exception:
+        await query.message.reply_text("⚠️ Timeout! You didn’t send a thumbnail in time.")
+        return
+        
+        file_path = f"downloads/{query.from_user.id}_thumb.jpg"
+        await response.download(file_path)
         users.update_one(
             {"user_id": query.from_user.id},
             {"$set": {"filters.thumbnail": file_path}},
             upsert=True
         )
         await query.message.edit("✅ Thumbnail saved successfully!", reply_markup=get_main_filter_buttons())
-    except asyncio.TimeoutError:
-        await query.message.edit("⏰ Timeout. Please try again.", reply_markup=get_main_filter_buttons())
 
+# ✅ STEP 3: Remove thumbnail callback
+@app.on_callback_query(filters.regex("^remove_thumb$"))
+async def remove_thumb_callback(client, query: CallbackQuery):
+    users.update_one(
+        {"user_id": query.from_user.id},
+        {"$set": {"filters.thumbnail": None}},
+        upsert=True,
+    )
+    await query.message.edit(
+        "🗑 Thumbnail removed successfully!",
+        reply_markup=get_main_filter_buttons()
+    )
+    
 @app.on_callback_query(filters.regex("^edit_types$"))
 async def edit_types(_, query: CallbackQuery):
     user_id = query.from_user.id
