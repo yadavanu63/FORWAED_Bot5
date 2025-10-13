@@ -369,7 +369,7 @@ async def start(client: Client, msg: Message):
             "✨ You're now ready to enjoy all <b>advanced forwarding features</b> :\n\n"
             "• ✏️ Smart Caption Replacement\n"
             "• 🧹 Text Deletion & Filters\n"
-            "• 📌 Auto Pin & Media Control\n
+            "• 📌 Auto Pin & Media Control\n"
             "• 🖼 Change Thumbnail\n\n"
             "<b>🚀 Commands:</b>\n"
             "<blockquote>• /settings – Customize filters & features\n"
