@@ -425,6 +425,7 @@ def get_main_filter_buttons():
          InlineKeyboardButton("ℹ️ View Settings", callback_data="view_info")],
         [InlineKeyboardButton("♻️ Reset Settings", callback_data="reset_settings"),
          InlineKeyboardButton("📖 Help", callback_data="filters_help")],
+        [InlineKeyboardButton("🖼 Change Thumbnail", callback_data="change_thumb")],  # 👈 New Feature
         [InlineKeyboardButton("✅ Save Settings", callback_data="done")]
     ])
 
@@ -434,6 +435,7 @@ caption = (
     "🔹 Replace Words\n"
     "🔹 Delete Specific Text\n"
     "🔹 Filter by Media Types\n"
+    "🔹 Change Video Thumbnail\n\n"
     "🔹 Auto Pin Messages\n\n"
     "🎯 Tap the buttons below to modify settings as per your style."
 )
@@ -454,11 +456,37 @@ async def show_filter_menu(client: ListenClient, message):
                 "delete": [],
                 "types": DEFAULT_TYPES.copy()
             },
-            "auto_pin": False
+            "auto_pin": False,
+            "thumbnail": None  # 👈 Thumbnail added
         }
     }, upsert=True)
 
     await message.reply(caption, reply_markup=get_main_filter_buttons())
+
+#==================== Change Thumbnail Feature ====================
+@app.on_callback_query(filters.regex("^change_thumb$"))
+async def change_thumb_callback(client, query: CallbackQuery):
+    await query.message.edit(
+        "🖼 Please send me the image you want to use as video thumbnail.\n\n"
+        "Or type /cancel to abort."
+    )
+    try:
+        response = await client.listen(query.message.chat.id, timeout=120)
+        if response.text and response.text.lower() == "/cancel":
+            return await query.message.edit("❌ Cancelled.", reply_markup=get_main_filter_buttons())
+
+        if not response.photo:
+            return await query.message.edit("⚠️ Please send a photo file.", reply_markup=get_main_filter_buttons())
+
+        file_path = await client.download_media(response.photo.file_id)
+        users.update_one(
+            {"user_id": query.from_user.id},
+            {"$set": {"filters.thumbnail": file_path}},
+            upsert=True
+        )
+        await query.message.edit("✅ Thumbnail saved successfully!", reply_markup=get_main_filter_buttons())
+    except asyncio.TimeoutError:
+        await query.message.edit("⏰ Timeout. Please try again.", reply_markup=get_main_filter_buttons())
 
 @app.on_callback_query(filters.regex("^edit_types$"))
 async def edit_types(_, query: CallbackQuery):
@@ -593,6 +621,7 @@ async def view_info_callback(client, query: CallbackQuery):
         f"🔁 Replace: {replace}\n"
         f"❌ Delete: {delete}\n"
         f"📌 Auto Pin: {auto_pin}\n\n"
+        f"🖼 Thumbnail: {'✅ Set' if user.get('filters', {}).get('thumbnail') else '❌ Not Set'}\n\n"
         f"<u>**Message Types**</u>\n\n{type_status}",
         reply_markup=get_main_filter_buttons()
 )
@@ -620,7 +649,8 @@ async def reset_settings_callback(client, query: CallbackQuery):
                 "filters.replace": {},
                 "filters.delete": [],
                 "filters.types": default_types,
-                "filters.auto_pin": True
+                "filters.auto_pin": True,
+                "filters.thumbnail": None  # 👈 reset thumbnail too
             }
         },
         upsert=True
@@ -632,7 +662,8 @@ async def reset_settings_callback(client, query: CallbackQuery):
         "• 🔁 Replace Words  :  Cleared\n"
         "• ❌ Delete Words  :  Cleared\n"
         "• 🔘 Message Types  :  Set to Default\n"
-        "• 📌 Auto Pin  :  Enabled",
+        "• 📌 Auto Pin  :  Enabled"
+        "• 🖼 Thumbnail  :  Cleared",
         reply_markup=get_main_filter_buttons()
     )
 
@@ -662,6 +693,8 @@ async def filters_help_callback(client, query: CallbackQuery):
         "• If enabled, pins messages in target if pinned in source.\n\n"
         "🧪 <b>Message Types</b>\n"
         "• Filter by type: photo, video, text, document, etc.\n\n"
+        "🖼 <b>Change Thumbnail</b>\n"
+        "• Set or update custom thumbnail for forwarded videos/photos.\n\n"
         "♻️ <b>Reset Settings</b>\n"
         "• Resets all settings and filters to default.\n\n"
         "ℹ️ <b>View Settings Info</b>\n"
@@ -718,7 +751,30 @@ async def forward_command(client, message):
         target = await client.get_chat(target_chat)
     except PeerIdInvalid:
         return await status.edit("<blockquote>❌ Bot doesn't have access. Add it to both source and target</blockquote>")
+        
+    filters_data = user.get("filters", {})
+    thumb_path = filters_data.get("thumbnail")
 
+    for msg_id in range(start_id, end_id + 1):
+        try:
+            msg = await client.get_messages(start_chat, msg_id)
+            if msg.video:
+                await client.send_video(
+                    chat_id=target_chat,
+                    video=msg.video.file_id,
+                    caption=msg.caption,
+                    thumb=thumb_path if thumb_path else None
+                )
+            else:
+                await msg.copy(target_chat)
+            count += 1
+        except Exception as e:
+            failed += 1
+            print(f"[Forward Error] {e}")
+
+    elapsed = round(time.time() - start_time, 2)
+    await status.edit(f"✅ Forwarded: {count}/{total} messages in {elapsed}s\n❌ Failed: {failed}")
+    
     log_topic_name = f"{target.title} | {user_id}"[:128]
     log_topic_id = None
     try:
