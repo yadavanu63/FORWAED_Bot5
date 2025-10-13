@@ -427,7 +427,8 @@ def get_main_filter_buttons():
          InlineKeyboardButton("ℹ️ View Settings", callback_data="view_info")],
         [InlineKeyboardButton("♻️ Reset Settings", callback_data="reset_settings"),
          InlineKeyboardButton("📖 Help", callback_data="filters_help")],
-        [InlineKeyboardButton("🖼 Change Thumbnail", callback_data="change_thumb")],  # 👈 New Feature
+        [InlineKeyboardButton("🖼 Add Thumbnail", callback_data="change_thumb")],
+        InlineKeyboardButton("🗑 Remove Thumbnail", callback_data="remove_thumb")],# 👈 New Feature
         [InlineKeyboardButton("✅ Save Settings", callback_data="done")]
     ])
 
