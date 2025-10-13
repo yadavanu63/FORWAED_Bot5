@@ -469,36 +469,46 @@ async def show_filter_menu(client: ListenClient, message):
 #==================== Change Thumbnail Feature ====================
 @app.on_callback_query(filters.regex("^change_thumb$"))
 async def change_thumb_callback(client, query: CallbackQuery):
-    await query.message.edit(
+    await query.message.edit_text(
         "📸 Send me the new thumbnail image you want to set for your forwarded videos.\n\n"
         "👉 Only send an image file (JPG/PNG)."
     )
     try:
+        # wait for usere to send photo
         response = await client.listen(
             chat_id=query.from_user.id, filters=filters.photo, timeout=60)
-    except Exception:
-        await query.message.reply_text("⚠️ Timeout! You didn’t send a thumbnail in time.")
-        return
-        
+        # save photo locally
         file_path = f"downloads/{query.from_user.id}_thumb.jpg"
         await response.download(file_path)
+        # save thumbnail info in db
         users.update_one(
             {"user_id": query.from_user.id},
             {"$set": {"filters.thumbnail": file_path}},
             upsert=True
         )
-        await query.message.edit("✅ Thumbnail saved successfully!", reply_markup=get_main_filter_buttons())
-
+        await query.message.edit_text("✅ Thumbnail saved successfully!", reply_markup=get_main_filter_buttons())
+    except Exception as e:
+        await query.message.edit_text(
+            f"❌ Failed to set thumbnail.\nError: {e}",
+            reply_markup=get_main_filter_buttons()
+        )
+        
 # ✅ STEP 3: Remove thumbnail callback
 @app.on_callback_query(filters.regex("^remove_thumb$"))
 async def remove_thumb_callback(client, query: CallbackQuery):
+    user_id = query.from_user.id
+
     users.update_one(
-        {"user_id": query.from_user.id},
-        {"$set": {"filters.thumbnail": None}},
-        upsert=True,
+        {"user_id": user_id},
+        {"$unset": {"filters.thumbnail": ""}}
     )
-    await query.message.edit(
-        "🗑 Thumbnail removed successfully!",
+
+    thumb_path = f"downloads/{user_id}_thumb.jpg"
+    if os.path.exists(thumb_path):
+        os.remove(thumb_path)
+
+    await query.message.edit_text(
+        "🗑️ Thumbnail removed successfully!",
         reply_markup=get_main_filter_buttons()
     )
     
@@ -721,6 +731,26 @@ async def filters_help_callback(client, query: CallbackQuery):
 async def done(_, query: CallbackQuery):
     await query.message.edit("✅ Filters saved successfully.")
 #========================= Start forward ==============================
+# Ensure downloads folder exists
+os.makedirs("downloads", exist_ok=True)
+async def forward_message_with_thumb(client, msg, target_chat, thumb_path=None):
+    try:
+        if msg.video:
+            await client.send_video(
+                chat_id=target_chat,
+                video=msg.video.file_id,
+                caption=msg.caption,
+                thumb=thumb_path if thumb_path and os.path.exists(thumb_path) else None
+            )
+        else:
+            await client.copy_message(
+                chat_id=target_chat,
+                from_chat_id=msg.chat.id,
+                message_id=msg.id
+            )
+    except Exception as e:
+        print(f"⚠️ Error forwarding message with thumbnail: {e}")
+
 @app.on_message(filters.command("forward") & filters.private)
 async def forward_command(client, message):
     result = await force_subscribe(client, message)
@@ -770,21 +800,13 @@ async def forward_command(client, message):
     thumb_path = filters_data.get("thumbnail")
 
     for msg_id in range(start_id, end_id + 1):
-        try:
-            msg = await client.get_messages(start_chat, msg_id)
-            if msg.video:
-                await client.send_video(
-                    chat_id=target_chat,
-                    video=msg.video.file_id,
-                    caption=msg.caption,
-                    thumb=thumb_path if thumb_path else None
-                )
-            else:
-                await msg.copy(target_chat)
-            count += 1
-        except Exception as e:
-            failed += 1
-            print(f"[Forward Error] {e}")
+    try:
+        msg = await client.get_messages(start_chat, msg_id)
+        await forward_message_with_thumb(client, msg, target_chat, thumb_path)
+        count += 1
+    except Exception as e:
+        failed += 1
+        print(f"[Forward Error] {e}")
 
     elapsed = round(time.time() - start_time, 2)
     await status.edit(f"✅ Forwarded: {count}/{total} messages in {elapsed}s\n❌ Failed: {failed}")
