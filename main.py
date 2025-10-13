@@ -369,7 +369,8 @@ async def start(client: Client, msg: Message):
             "✨ You're now ready to enjoy all <b>advanced forwarding features</b> :\n\n"
             "• ✏️ Smart Caption Replacement\n"
             "• 🧹 Text Deletion & Filters\n"
-            "• 📌 Auto Pin & Media Control\n\n"
+            "• 📌 Auto Pin & Media Control\n
+            "• 🖼 Change Thumbnail\n\n"
             "<b>🚀 Commands:</b>\n"
             "<blockquote>• /settings – Customize filters & features\n"
             "• /forward – Start message forwarding\n"
@@ -390,7 +391,8 @@ async def start(client: Client, msg: Message):
             "• 📤 Superfast message forwarding\n"
             "• ✨ Caption & link editing tools\n"
             "• 📌 Auto-pinning + media type filters\n"
-            "• 🛠️ Custom word replacement & deletion\n\n"
+            "• 🛠️ Custom word replacement & deletion\n"
+            "• 🖼 Set or update custom thumbnail for forwarded videos\n\n"
             "<b>🤝 Want access?</b>\n"
             "<b> Use /id & Send to owner</b>\n"
             "<blockquote>Contact the admin to request your premium slot:</blockquote>",
