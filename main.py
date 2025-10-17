@@ -470,23 +470,37 @@ async def show_filter_menu(client: ListenClient, message):
 @app.on_callback_query(filters.regex("^change_thumb$"))
 async def change_thumb_callback(client, query: CallbackQuery):
     await query.message.edit_text(
-        "📸 Send me the new thumbnail image you want to set for your forwarded videos.\n\n"
-        "👉 Only send an image file (JPG/PNG)."
+        "🌄 NOW SEND THE THUMBNAIL URL\n\n"
+        "Example:\nhttps://telegra.ph/file/abcd1234efgh5678.jpg\n\n"
+        "Or send no to cancel."
     )
     try:
         # wait for usere to send photo
         response = await client.listen(
-            chat_id=query.from_user.id, filters=filters.photo, timeout=60)
-        # save photo locally
-        file_path = f"downloads/{query.from_user.id}_thumb.jpg"
-        await response.download(file_path)
-        # save thumbnail info in db
+            chat_id=query.from_user.id, filters=filters.text, timeout=60)
+        thumb_url = response.text.strip()
+        if thumb_url.lower() == "no":
+            await query.message.edit_text(
+                "❌ Thumbnail setup cancelled.",
+                reply_markup=get_main_filter_buttons()
+            )
+            return
+        if not thumb_url.startswith("http"):
+            await query.message.edit_text(
+                "⚠️ Invalid URL. Please send a valid image link (jpg/png).",
+                reply_markup=get_main_filter_buttons()
+            )
+            return
+        # ✅ Save URL to MongoDB
         users.update_one(
             {"user_id": query.from_user.id},
-            {"$set": {"filters.thumbnail": file_path}},
+            {"$set": {"filters.thumbnail_url": thumb_url}},
             upsert=True
         )
-        await query.message.edit_text("✅ Thumbnail saved successfully!", reply_markup=get_main_filter_buttons())
+        await query.message.edit_text(
+            "✅ Thumbnail URL saved successfully!",
+            reply_markup=get_main_filter_buttons()
+        )
     except Exception as e:
         await query.message.edit_text(
             f"❌ Failed to set thumbnail.\nError: {e}",
@@ -496,19 +510,12 @@ async def change_thumb_callback(client, query: CallbackQuery):
 # ✅ STEP 3: Remove thumbnail callback
 @app.on_callback_query(filters.regex("^remove_thumb$"))
 async def remove_thumb_callback(client, query: CallbackQuery):
-    user_id = query.from_user.id
-
     users.update_one(
-        {"user_id": user_id},
-        {"$unset": {"filters.thumbnail": ""}}
+        {"user_id": query.from_user.id},
+        {"$unset": {"filters.thumbnail_url": ""}}
     )
-
-    thumb_path = f"downloads/{user_id}_thumb.jpg"
-    if os.path.exists(thumb_path):
-        os.remove(thumb_path)
-
     await query.message.edit_text(
-        "🗑️ Thumbnail removed successfully!",
+        "🗑 Thumbnail removed successfully!",
         reply_markup=get_main_filter_buttons()
     )
     
@@ -686,7 +693,7 @@ async def reset_settings_callback(client, query: CallbackQuery):
         "• 🔁 Replace Words  :  Cleared\n"
         "• ❌ Delete Words  :  Cleared\n"
         "• 🔘 Message Types  :  Set to Default\n"
-        "• 📌 Auto Pin  :  Enabled"
+        "• 📌 Auto Pin  :  Enabled\n"
         "• 🖼 Thumbnail  :  Cleared",
         reply_markup=get_main_filter_buttons()
     )
