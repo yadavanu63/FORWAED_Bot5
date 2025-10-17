@@ -742,12 +742,18 @@ async def done(_, query: CallbackQuery):
 os.makedirs("downloads", exist_ok=True)
 async def forward_message_with_thumb(client, msg, target_chat, thumb_path=None):
     try:
+        if thumb_path and thumb_path.startswith("http"):
+            thumb_arg = thumb_path
+        elif thumb_path and os.path.exists(thumb_path):
+            thumb_arg = thumb_path
+        else:
+            thumb_arg = None
         if msg.video:
             await client.send_video(
                 chat_id=target_chat,
                 video=msg.video.file_id,
                 caption=msg.caption,
-                thumb=thumb_path if thumb_path and os.path.exists(thumb_path) else None
+                thumb=thumb_arg
             )
         else:
             await client.copy_message(
@@ -805,6 +811,8 @@ async def forward_command(client, message):
         
     filters_data = user.get("filters", {})
     thumb_path = filters_data.get("thumbnail")
+    if thumb_path == "no":
+        thumb_path = None
 
     for msg_id in range(start_id, end_id + 1):
         try:
