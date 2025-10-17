@@ -971,7 +971,7 @@ async def forward_command(client, message):
         except Exception as e:
             print(f"Progress update error: {e}")
 
-        await asyncio.sleep(0.6)
+        await asyncio.sleep(3)
 
     time_taken = format_eta(time.time() - start_time)
     await status.edit(
